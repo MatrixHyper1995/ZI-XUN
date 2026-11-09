@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自询 · 买前三问</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>自询 · 买前三问</h1>
+    <p>帮新手想清楚：这只股票到底值不值得买</p>
+  </header>
+
+  <div class="panel">
+    <div class="input-row">
+      <div class="market-select">
+        <select id="market">
+          <option value="hk" selected>港股</option>
+          <option value="cn">A股</option>
+          <option value="us">美股</option>
+        </select>
+      </div>
+      <div class="input-box">
+        <input id="stockInput" type="text" placeholder="输入股票代码或名称，如「腾讯」或 0700.HK" autocomplete="off">
+        <div class="autocomplete" id="ac"></div>
+      </div>
+      <button class="btn" id="startBtn" onclick="start()">开始</button>
+    </div>
+  </div>
+
+  <!-- 三问回答表单：三层结构（决策视角标题 + 引导语 + 为什么问），静态写死，不由 AI 返回 -->
+  <div class="panel" id="questionForm" style="display:none">
+    <div class="stock-badge">正在分析：<b id="badgeName"></b><span class="code" id="badgeCode"></span></div>
+
+    <div class="q-form">
+      <h4><span class="num">①</span>这门生意赚的是不是真钱？<span class="q-sub">（靠什么赚钱）</span></h4>
+      <div class="prompt">用一句话说，它把什么东西、卖给谁？</div>
+      <div class="why">为什么问：买股票就是买公司——公司不真赚钱，你的钱就打水漂了</div>
+      <textarea id="ans1" placeholder="说说你的看法（可留空，留空由 AI 给出完整分析）"></textarea>
+    </div>
+    <div class="q-form">
+      <h4><span class="num">②</span>现在这个价，买贵了没有？<span class="q-sub">（贵不贵）</span></h4>
+      <div class="prompt">你觉得它现在是便宜还是贵？为什么？</div>
+      <div class="why">为什么问：再好的公司买贵了也难赚；价格里已经"提前定价"了多少预期</div>
+      <textarea id="ans2" placeholder="说说你的看法（可留空）"></textarea>
+    </div>
+    <div class="q-form">
+      <h4><span class="num">③</span>万一买错了，最坏亏多少？<span class="q-sub">（最坏会怎样）</span></h4>
+      <div class="prompt">什么情况下你会在这只股票上亏钱？写一种具体情形</div>
+      <div class="why">为什么问：先想好最坏能亏多少，才不会一跌就慌、乱卖</div>
+      <textarea id="ans3" placeholder="说说你的看法（可留空）"></textarea>
+    </div>
+
+    <button class="btn" id="submitBtn" onclick="submitAnswers()">提交</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>分析中…</p>
+  </div>
+
+  <div id="error" class="error" style="display:none"></div>
+  <div id="results"></div>
+
+  <footer>
+    <div class="disclaimer">⚠️ <b>本应用不提供买卖建议，仅供学习参考。</b>所有内容不构成投资依据。</div>
+    <button class="print-btn" id="pdfBtn" onclick="exportPdf()" style="display:none">📄 导出 PDF</button>
+  </footer>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

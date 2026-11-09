@@ -1,0 +1,35 @@
+@startuml
+!theme plain
+title Workflow — Full Pipeline
+
+start
+:Input stock code / name;
+:Select market (US / HK / CN-A);
+:Show autocomplete (/api/suggest);
+
+:Click "Start";
+:POST /api/analyze;
+
+if (input is a name?) then (yes)
+  :StockResolver: name → code;
+else (no: already a code)
+endif
+
+:PromptBuilder: read template + fill stock;
+:ArtiClient: call ARTi API (arti-chat);
+:ResponseParser: parse JSON;
+
+:Render three question cards;
+:Terms highlighted (click to expand inline);
+:Show disclaimer;
+
+if (user clicks "Export PDF"?) then (yes)
+  :POST /api/export-pdf;
+  :PdfExporter: generate report;
+  :Download PDF;
+else (no)
+endif
+
+stop
+
+@enduml

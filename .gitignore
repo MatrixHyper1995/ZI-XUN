@@ -1,0 +1,7 @@
+API Key.txt
+Advisor/bin/
+Advisor/obj/
+Advisor/appsettings.Local.json
+dist/
+*.user
+.vs/

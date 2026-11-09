@@ -1,0 +1,40 @@
+@startuml
+!theme plain
+title User Flow — Input → Three Questions
+
+actor "User" as U
+participant "Front-end" as FE
+participant "Program.cs" as P
+participant "StockResolver" as SR
+participant "PromptBuilder" as PB
+participant "ArtiClient" as AC
+participant "ARTi API" as API
+participant "ResponseParser" as RP
+
+U -> FE : type code / name
+FE -> P : GET /api/suggest
+P -> SR : prefix match (in-memory index)
+SR --> P : matches
+P --> FE : suggestions
+
+U -> FE : click "Start"
+FE -> P : POST /api/analyze {query, market}
+P -> SR : resolve name → code
+SR --> P : code
+P -> PB : build prompt
+PB --> P : prompt (template + stock)
+P -> AC : call
+AC -> API : POST /chat/completions (arti-chat)
+API --> AC : three-questions JSON
+AC --> P : response
+P -> RP : parse JSON
+RP --> P : ThreeQuestions object
+P --> FE : { questions: [...] }
+
+FE -> FE : render cards + expandable terms
+
+U -> FE : click "Export PDF"
+FE -> P : POST /api/export-pdf
+P --> FE : PDF download
+
+@enduml

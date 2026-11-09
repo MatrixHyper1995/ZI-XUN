@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>买前三问 · ARTi Demo</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --card: #1c2027;
+    --border: #2a2f38;
+    --primary: #4f8cff;
+    --accent: #00d4aa;
+    --term: #00d4aa;
+    --term-plain: #f5d76e;
+    --text: #e6e8eb;
+    --dim: #9aa3af;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+    line-height: 1.65;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  /* Header */
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 {
+    font-size: 28px; font-weight: 700; letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header p { color: var(--dim); font-size: 14px; margin-top: 6px; }
+
+  /* Input panel */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    position: relative;
+  }
+  .input-row { display: flex; gap: 10px; align-items: stretch; }
+  .market-select { position: relative; }
+  .market-select select {
+    background: var(--card); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 0 30px 0 12px; height: 46px; font-size: 15px; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+  }
+  .market-select::after {
+    content: "▾"; position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%); color: var(--dim); pointer-events: none; font-size: 12px;
+  }
+  .input-box { position: relative; flex: 1; }
+  .input-box input {
+    width: 100%; height: 46px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 15px; padding: 0 14px; outline: none;
+  }
+  .input-box input:focus { border-color: var(--primary); }
+  .input-box input::placeholder { color: var(--dim); }
+
+  .autocomplete {
+    position: absolute; top: 52px; left: 0; right: 0;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; display: none; z-index: 20;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  }
+  .autocomplete .ac-item {
+    padding: 10px 14px; cursor: pointer; font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .autocomplete .ac-item:hover, .autocomplete .ac-item.active { background: #232a35; }
+  .autocomplete .ac-item .code { color: var(--dim); font-size: 12px; }
+
+  .btn {
+    background: linear-gradient(135deg, var(--primary), #3a6fe0);
+    color: #fff; border: none; border-radius: 10px;
+    height: 46px; padding: 0 22px; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .9; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* Suggestion pills */
+  .pills { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--dim); border-radius: 20px; padding: 6px 14px;
+    font-size: 13px; cursor: pointer; transition: all .15s;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--text); }
+
+  /* Loading */
+  .loading { text-align: center; padding: 40px 0; display: none; }
+  .spinner {
+    width: 36px; height: 36px; margin: 0 auto 14px;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { color: var(--dim); font-size: 14px; }
+
+  /* Results */
+  #results { display: none; margin-top: 22px; }
+  .stock-title { text-align: center; margin-bottom: 18px; }
+  .stock-title .name { font-size: 20px; font-weight: 700; }
+  .stock-title .meta { color: var(--dim); font-size: 13px; margin-top: 2px; }
+  .q-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px; margin-bottom: 14px;
+    animation: fadeUp .4s ease both;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .q-card h3 {
+    font-size: 17px; font-weight: 700; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .q-card h3 .num {
+    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff; font-size: 14px; font-weight: 700;
+  }
+  .q-card .answer { font-size: 15px; color: #d3d8de; }
+  .q-card h3 .q-sub { font-size: .8em; font-weight: 400; color: var(--dim); margin-left: 2px; }
+
+  /* Term (inline expandable — no line break) */
+  span.term {
+    color: var(--term);
+    border-bottom: 1px dashed var(--term);
+    cursor: pointer;
+  }
+  span.term .tip {
+    display: none;
+    color: var(--term-plain);
+    border-bottom: none;
+    font-size: .92em;
+  }
+  span.term .tip.show { display: inline; }
+
+  /* Footer */
+  footer {
+    margin-top: 26px; text-align: center;
+    border-top: 1px solid var(--border); padding-top: 18px;
+  }
+  .disclaimer { color: var(--dim); font-size: 12.5px; }
+  .disclaimer b { color: #f0a86e; }
+  .print-btn {
+    margin-top: 12px; background: var(--card); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px; padding: 8px 18px;
+    font-size: 14px; cursor: pointer;
+  }
+  .print-btn:hover { border-color: var(--accent); }
+
+  /* Question form */
+  .stock-badge { text-align: center; margin-bottom: 18px; font-size: 15px; color: var(--dim); }
+  .stock-badge b { color: var(--text); }
+  .stock-badge .code { color: var(--dim); font-size: 13px; margin-left: 4px; }
+  .q-form { margin-bottom: 20px; }
+  .q-form h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .q-form h4 .num {
+    width: 24px; height: 24px; border-radius: 8px; margin-right: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff; font-size: 13px; font-weight: 700; vertical-align: -3px;
+  }
+  .q-form h4 .q-sub { font-size: .8em; font-weight: 400; color: var(--dim); }
+  .q-form .prompt { color: var(--text); font-size: 13.5px; margin-bottom: 4px; padding-left: 30px; }
+  .q-form .why { color: var(--dim); font-size: 12.5px; margin-bottom: 8px; padding-left: 30px; }
+  .q-form textarea {
+    width: 100%; min-height: 74px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 14px; padding: 12px 14px;
+    resize: vertical; outline: none; font-family: inherit; line-height: 1.6;
+  }
+  .q-form textarea:focus { border-color: var(--primary); }
+  .q-form textarea::placeholder { color: var(--dim); }
+
+  .user-answer {
+    color: var(--dim); font-size: 13px; margin-bottom: 10px;
+    padding: 9px 12px; background: #232a35; border-radius: 8px;
+    border-left: 3px solid var(--primary);
+  }
+  .feedback { color: var(--term-plain); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>买前三问</h1>
+    <p>帮新手想清楚：这只股票到底值不值得买</p>
+  </header>
+
+  <div class="panel">
+    <div class="input-row">
+      <div class="market-select">
+        <select id="market">
+          <option value="hk" selected>港股</option>
+          <option value="cn">A股</option>
+          <option value="us">美股</option>
+        </select>
+      </div>
+      <div class="input-box">
+        <input id="stockInput" type="text" placeholder="输入股票代码或名称，如「腾讯」或 0700.HK" autocomplete="off">
+        <div class="autocomplete" id="ac"></div>
+      </div>
+      <button class="btn" id="startBtn" onclick="start()">开始</button>
+    </div>
+    <div class="pills">
+      <span class="pill" onclick="fill('腾讯控股','hk')">腾讯控股 · 0700.HK</span>
+      <span class="pill" onclick="fill('贵州茅台','cn')">贵州茅台 · 600519.SH</span>
+      <span class="pill" onclick="fill('苹果','us')">苹果 · AAPL</span>
+      <span class="pill" onclick="fill('特斯拉','us')">特斯拉 · TSLA</span>
+    </div>
+  </div>
+
+  <!-- 三问回答表单 -->
+  <div class="panel" id="questionForm" style="display:none">
+    <div class="stock-badge">正在分析：<b id="badgeName"></b><span class="code" id="badgeCode"></span></div>
+
+    <div class="q-form">
+      <h4><span class="num">①</span>这门生意赚的是不是真钱？<span class="q-sub">（靠什么赚钱）</span></h4>
+      <div class="prompt">用一句话说，它把什么东西、卖给谁？</div>
+      <div class="why">为什么问：买股票就是买公司——公司不真赚钱，你的钱就打水漂了</div>
+      <textarea id="ans1" placeholder="说说你的看法（可留空，留空由 AI 给出完整分析）"></textarea>
+    </div>
+    <div class="q-form">
+      <h4><span class="num">②</span>现在这个价，买贵了没有？<span class="q-sub">（贵不贵）</span></h4>
+      <div class="prompt">你觉得它现在是便宜还是贵？为什么？</div>
+      <div class="why">为什么问：再好的公司买贵了也难赚；价格里已经"提前定价"了多少预期</div>
+      <textarea id="ans2" placeholder="说说你的看法（可留空）"></textarea>
+    </div>
+    <div class="q-form">
+      <h4><span class="num">③</span>万一买错了，最坏亏多少？<span class="q-sub">（最坏会怎样）</span></h4>
+      <div class="prompt">什么情况下你会在这只股票上亏钱？写一种具体情形</div>
+      <div class="why">为什么问：先想好最坏能亏多少，才不会一跌就慌、乱卖</div>
+      <textarea id="ans3" placeholder="说说你的看法（可留空）"></textarea>
+    </div>
+
+    <button class="btn" id="submitBtn" onclick="submit()">提交</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>正在问 ARTi 三个问题…</p>
+  </div>
+
+  <div id="results"></div>
+
+  <footer>
+    <div class="disclaimer">⚠️ <b>本应用不提供买卖建议，仅供学习参考。</b>所有内容为示例数据，不构成投资依据。</div>
+    <button class="print-btn" onclick="window.print()">🖨 打印 / 存为 PDF</button>
+  </footer>
+
+</div>
+
+<script>
+/* ---------- 内置股票索引（mock，演示用；生产用 5 万 CSV） ---------- */
+const stocks = {
+  hk: [
+    { code: "0700.HK", name: "腾讯控股" },
+    { code: "9988.HK", name: "阿里巴巴" },
+    { code: "3690.HK", name: "美团" },
+    { code: "1810.HK", name: "小米集团" },
+    { code: "1211.HK", name: "比亚迪股份" },
+    { code: "0005.HK", name: "汇丰控股" }
+  ],
+  cn: [
+    { code: "600519.SH", name: "贵州茅台" },
+    { code: "000001.SZ", name: "平安银行" },
+    { code: "300750.SZ", name: "宁德时代" }
+  ],
+  us: [
+    { code: "AAPL", name: "苹果" },
+    { code: "TSLA", name: "特斯拉" },
+    { code: "NVDA", name: "英伟达" },
+    { code: "MSFT", name: "微软" }
+  ]
+};
+
+/* ---------- Mock 三问答案（示例数据，非投资建议） ---------- */
+const mockAnswers = {
+  "腾讯控股": {
+    q1: {
+      text: "腾讯是一家以社交为根基的互联网巨头，赚钱主要靠三大业务：① [游戏]：2025 全年收入 2416 亿元（同比 +22%），其中海外游戏 211 亿元（+32%），是最大的[现金来源]和[护城河]；② [广告]：Q4 收入 411 亿元（+17%），靠视频号、微信搜索和 AI 投放系统驱动，增速最快；③ [金融科技与企业服务]：Q4 收入 608 亿元（+8%），含支付、理财、云计算。最新季度营收 2047.9 亿元、净利润 560 亿元，[毛利率]与[净利率]均健康，业务多元、抗风险能力强。",
+      terms: {
+        "游戏": "网络游戏业务，腾讯最赚钱、现金流最稳的板块",
+        "现金来源": "公司真正拿到手现金的主要渠道",
+        "护城河": "公司抵御竞争、长期保持优势的能力",
+        "广告": "微信、视频号里的商业广告，按曝光/点击收费",
+        "金融科技与企业服务": "支付、理财、云计算等 To B 业务",
+        "毛利率": "（收入-成本）÷收入，反映产品或服务本身多赚钱",
+        "净利率": "净利润 ÷ 收入，反映公司整体盈利能力"
+      }
+    },
+    q2: {
+      text: "按当前价约 430 港元，估值可从几面看：① [市盈率]（PE）约 14 倍，[前瞻市盈率]约 12 倍，低于自身 5 年历史均值，也低于多数互联网同行；② [股东回报]：股息率约 1.32%、[派息率]约 18.75%，近年持续[回购]；③ [市场共识]：43 位分析师中 39 位给「买入」，目标均价约 652 港元。但[市场情绪]偏谨慎——因 2026 年 AI [资本开支]大幅上调（市场预计 1850～2000 亿元），担忧烧钱拖累利润，股价从 52 周高点 662 回落，现处 375～662 区间的中下位。总体：估值不贵，情绪偏谨慎。",
+      terms: {
+        "市盈率": "股价 ÷ 每股盈利，衡量贵不贵，越低通常越便宜",
+        "前瞻市盈率": "用「未来预期盈利」算的市盈率，看未来估值",
+        "股东回报": "公司通过分红、回购把钱返还给股东",
+        "派息率": "净利润里拿出来分红的比例",
+        "回购": "公司用现金买回自己的股票，提升每股价值",
+        "市场共识": "多数专业机构对这只股票的综合看法",
+        "市场情绪": "市场整体偏乐观追高、还是偏恐慌抛售的氛围",
+        "资本开支": "为未来扩张（买芯片、建数据中心）花的钱"
+      }
+    },
+    q3: {
+      text: "最坏情形的推演，看三个层面：① [现金流]压力——2026 年 AI [资本开支]可能高达 1850～2000 亿元，若 AI 收入兑现不及预期，[自由现金流]会被明显拖累，摩根大通已因此下调盈利预测 5%，净现金从 582 亿元继续下探，是市场最大担忧；② 业务[集中度]——游戏占收入近四成，面临[版号]监管和米哈游、网易等竞争，广告依赖微信生态，宏观消费走弱会拖慢增速；③ [市场情绪]退潮——当前约 12 倍 PE 买的是「AI 收入能见度」，若后续 AI 兑现不及预期，估值可能向历史低点回撤。缓冲在于：经营现金流仍高达 3030 亿元、[负债率]健康，游戏与微信的[护城河]仍在。所以最坏更可能是「估值回撤 + 增速放缓」，而非「现金流断裂」。",
+      terms: {
+        "现金流": "公司日常经营净流入的现金，衡量造血能力",
+        "资本开支": "为未来扩张（买芯片、建数据中心）花的钱",
+        "自由现金流": "赚到的现金扣掉必要开支后，真正能自由支配的钱",
+        "集中度": "收入/利润依赖单一业务的程度，越高风险越大",
+        "版号": "游戏在中国上线必须拿到的政府审批牌照",
+        "市场情绪": "市场整体偏乐观还是偏恐慌的氛围",
+        "负债率": "总负债占总资产比例，衡量偿债压力",
+        "护城河": "公司抵御竞争、长期保持优势的能力"
+      }
+    }
+  },
+  "贵州茅台": {
+    q1: {
+      text: "茅台是中国白酒龙头，生意模式极简：卖高端白酒，核心是[飞天茅台]，占收入和利润的绝对大头。[毛利率]常年超 90%，几乎是一门[现金牛]生意——先收款后发货，现金流极强。",
+      terms: {
+        "飞天茅台": "茅台最核心的高端白酒单品，贡献绝大部分利润",
+        "毛利率": "（收入-成本）÷收入，反映产品多赚钱",
+        "现金牛": "能持续稳定产生大量现金的业务"
+      }
+    },
+    q2: {
+      text: "茅台的[市盈率]（PE）长期在 A 股偏高（约 30～40 倍），因为市场愿意为它的品牌稀缺性和业绩确定性付[溢价]。当前估值处于自身历史中低位，[股息率]约 2～3%，是「贵但稳」的典型。",
+      terms: {
+        "市盈率": "股价 ÷ 每股盈利，衡量贵不贵",
+        "溢价": "价格高出「合理值」的部分",
+        "股息率": "每股分红 ÷ 股价，衡量分红回报"
+      }
+    },
+    q3: {
+      text: "风险主要在[政策]和消费需求变化：限制公款消费、年轻人饮酒偏好下降、白酒整体[去库存]都可能压制销量。但它的品牌[护城河]和现金流极强，下行风险相对有限。",
+      terms: {
+        "政策": "政府对白酒行业的监管或限制措施",
+        "去库存": "渠道里积压的货被消化掉的过程，库存高会压价",
+        "护城河": "公司抵御竞争、长期保持优势的能力"
+      }
+    }
+  },
+  "苹果": {
+    q1: {
+      text: "苹果靠两条腿赚钱：① 卖硬件（iPhone、Mac、iPad），iPhone 是绝对主力，占收入过半；② [服务业务]（App Store、iCloud、订阅），[毛利率]远高于硬件，正成为第二增长曲线，也平滑了硬件换机周期的波动。",
+      terms: {
+        "服务业务": "App Store、iCloud、Apple Music 等订阅和分成",
+        "毛利率": "（收入-成本）÷收入，反映产品多赚钱"
+      }
+    },
+    q2: {
+      text: "苹果的[市盈率]（PE）长期高于行业平均（约 30 倍），反映市场给予品牌和生态的[溢价]。当前估值处于自身历史偏高区间，但有持续[回购]和稳定分红托底。",
+      terms: {
+        "市盈率": "股价 ÷ 每股盈利，衡量贵不贵",
+        "溢价": "价格高出合理值的部分",
+        "回购": "公司用现金买回自己的股票，提升每股价值"
+      }
+    },
+    q3: {
+      text: "风险在于对 iPhone 的高度依赖、中国市场竞争加剧、硬件创新放缓。一旦新品不及预期，股价回撤可能较大；且估值偏高，[市场情绪]退潮会放大波动。",
+      terms: {
+        "市场情绪": "市场整体偏乐观还是偏恐慌的氛围"
+      }
+    }
+  },
+  "特斯拉": {
+    q1: {
+      text: "特斯拉主业是卖电动车，同时押注[自动驾驶]和储能业务。它的估值远超传统车企，因为市场把它当科技公司看，赌的是自动驾驶和机器人的未来，而不是当下的造车利润。",
+      terms: {
+        "自动驾驶": "让汽车自己开的技术，是特斯拉最大的想象空间"
+      }
+    },
+    q2: {
+      text: "特斯拉的[市盈率]（PE）远高于传统车企（数十倍甚至上百倍），说明市场为成长预期支付了极高[溢价]，估值波动也远大于同行，对消息和情绪极度敏感。",
+      terms: {
+        "市盈率": "股价 ÷ 每股盈利，衡量贵不贵",
+        "溢价": "价格高出合理值的部分"
+      }
+    },
+    q3: {
+      text: "最大风险是[市场情绪]退潮：一旦成长预期落空，高估值会剧烈回落。此外销量竞争、价格战、监管审查、管理层个人因素都是不确定项，属于典型的高波动高回撤标的。",
+      terms: {
+        "市场情绪": "市场整体偏乐观还是偏恐慌的氛围"
+      }
+    }
+  }
+};
+
+/* ---------- 状态 ---------- */
+let selectedName = "";
+
+/* ---------- 市场切换 ---------- */
+document.getElementById("market").addEventListener("change", function() {
+  hideAc();
+  document.getElementById("stockInput").value = "";
+  hideResults();
+  document.getElementById("questionForm").style.display = "none";
+});
+
+/* ---------- Autocomplete ---------- */
+const input = document.getElementById("stockInput");
+const acBox = document.getElementById("ac");
+
+input.addEventListener("input", function() {
+  const q = this.value.trim();
+  if (!q) { hideAc(); return; }
+  const m = document.getElementById("market").value;
+  const list = stocks[m] || [];
+  const hits = list.filter(s =>
+    s.name.includes(q) || s.code.toUpperCase().includes(q.toUpperCase())
+  );
+  if (!hits.length) { hideAc(); return; }
+  acBox.innerHTML = hits.map(s =>
+    `<div class="ac-item" data-name="${s.name}" data-code="${s.code}">
+       <span>${s.name}</span><span class="code">${s.code}</span>
+     </div>`
+  ).join("");
+  acBox.style.display = "block";
+  acBox.querySelectorAll(".ac-item").forEach(el => {
+    el.addEventListener("click", function() {
+      selectStock(this.dataset.name, this.dataset.code);
+    });
+  });
+});
+input.addEventListener("blur", function() { setTimeout(hideAc, 150); });
+
+function hideAc() { acBox.style.display = "none"; }
+
+function selectStock(name, code) {
+  input.value = name;
+  selectedName = name;
+  hideAc();
+}
+
+function fill(name, market) {
+  document.getElementById("market").value = market;
+  input.value = name;
+  selectedName = name;
+  hideAc();
+}
+
+/* ---------- 开始 → 显示三问表单 ---------- */
+function start() {
+  const q = input.value.trim();
+  if (!q) { input.focus(); return; }
+  selectedName = selectedName || q;
+
+  document.getElementById("badgeName").textContent = selectedName;
+  document.getElementById("badgeCode").textContent = findCode(selectedName);
+  hideResults();
+  const form = document.getElementById("questionForm");
+  form.style.display = "block";
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ---------- 提交 → 结合回答生成回应 ---------- */
+function submit() {
+  const answers = [
+    document.getElementById("ans1").value.trim(),
+    document.getElementById("ans2").value.trim(),
+    document.getElementById("ans3").value.trim()
+  ];
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  document.getElementById("loading").style.display = "block";
+
+  // 模拟调 ARTi 的延迟
+  setTimeout(function() {
+    document.getElementById("loading").style.display = "none";
+    render(selectedName, answers);
+    btn.disabled = false;
+  }, 1200);
+}
+
+function hideResults() { document.getElementById("results").style.display = "none"; }
+
+function render(name, answers) {
+  const data = mockAnswers[name] || fallbackAnswer(name);
+  const code = findCode(name);
+  const results = document.getElementById("results");
+  results.innerHTML = `
+    <div class="stock-title">
+      <div class="name">${name}</div>
+      <div class="meta">${code} · 示例数据，非投资建议</div>
+    </div>
+    ${card(1, '商业模式与盈利质量<span class="q-sub">（靠什么赚钱）</span>', data.q1, answers[0])}
+    ${card(2, '估值是否合理<span class="q-sub">（贵不贵）</span>', data.q2, answers[1])}
+    ${card(3, '下行风险与最坏情景<span class="q-sub">（最坏会怎样）</span>', data.q3, answers[2])}
+  `;
+  results.style.display = "block";
+  results.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function card(n, title, q, userAnswer) {
+  return `
+    <div class="q-card" style="animation-delay:${n * 0.12}s">
+      <h3><span class="num">${n}</span>${title}</h3>
+      ${userAnswer ? `<div class="user-answer">你的回答：${escapeHtml(userAnswer)}</div>` : ""}
+      <div class="answer">${renderAnswer(q, userAnswer)}</div>
+    </div>`;
+}
+
+function renderAnswer(q, userAnswer) {
+  let html = q.text;
+  for (const [term, plain] of Object.entries(q.terms || {})) {
+    html = html.split("[" + term + "]").join(
+      `<span class="term" onclick="toggleTerm(this)">${term}<span class="tip">（${plain}）</span></span>`
+    );
+  }
+  if (userAnswer) {
+    html = `<span class="feedback">你说「${escapeHtml(userAnswer)}」——这个思路不错，我帮你补全、校正几个关键点：</span><br><br>` + html;
+  } else {
+    html = `<span class="feedback">你留空了，我直接给出完整分析：</span><br><br>` + html;
+  }
+  return html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function toggleTerm(el) {
+  const tip = el.querySelector(".tip");
+  if (tip) tip.classList.toggle("show");
+}
+
+function findCode(name) {
+  for (const m in stocks) {
+    const hit = stocks[m].find(s => s.name === name);
+    if (hit) return hit.code;
+  }
+  return "";
+}
+
+function fallbackAnswer(name) {
+  return {
+    q1: { text: `这是「${name}」的示例占位回答。生产环境会由 ARTi 根据真实财报，说明它靠什么赚钱、现金来源与营业状况。`, terms: {} },
+    q2: { text: "这是估值占位回答。生产环境会引用 PE、历史区间、同行对比与市场情绪，判断当前贵不贵。", terms: {} },
+    q3: { text: "这是风险占位回答。生产环境会结合现金流、业务集中度、市场前景做最坏情况推演。", terms: {} }
+  };
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Companion</RootNamespace>
+    <AssemblyName>Advisor</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Data\stocks.csv" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Prompts\three-questions.txt" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="QuestPDF" Version="2026.9.1" />
+  </ItemGroup>
+
+</Project>

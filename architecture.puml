@@ -1,0 +1,33 @@
+@startuml
+!theme plain
+skinparam componentStyle rectangle
+title Program Structure — ARTi "Three Questions" (C# ASP.NET Core)
+
+actor "User" as user
+[Front-end\nindex.html + app.js] as fe
+
+package "Backend (Minimal API)" {
+  [Program.cs\nAPI routes] as prog
+  [StockResolver\n(name→code)] as sr
+  [PromptBuilder] as pb
+  [ArtiClient] as ac
+  [ResponseParser] as rp
+  [PdfExporter] as pdf
+}
+
+file "stocks.csv\n(~50k rows)" as csv
+file "three-questions.txt\n(prompt template)" as tmpl
+cloud "ARTi API\napi.artifin.ai (arti-chat)" as api
+
+user --> fe : input
+fe --> prog : /api/analyze\n/api/suggest\n/api/export-pdf
+prog --> sr : resolve name→code
+prog --> pb : build prompt
+prog --> ac : call ARTi
+prog --> rp : parse JSON
+prog --> pdf : export PDF
+sr --> csv : load + index
+pb --> tmpl : read template
+ac --> api : POST /chat/completions
+
+@enduml
