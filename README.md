@@ -49,7 +49,7 @@ export ARTI_API_KEY=你的key     # macOS / Linux
 
 cd Advisor
 dotnet run
-# 浏览器打开 http://localhost:5000
+# 浏览器打开 http://localhost:5050
 ```
 
 也可以在 `Advisor/` 下新建 `appsettings.Local.json`（已 gitignore）写入 `"Arti": { "ApiKey": "..." }` 代替环境变量。**Key 绝不入库。**
